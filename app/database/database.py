@@ -38,13 +38,11 @@ required_variables = {
     "DB_SSL_CA": DB_SSL_CA,
 }
 
-
 missing_variables = [
     name
     for name, value in required_variables.items()
     if not value
 ]
-
 
 if missing_variables:
     raise RuntimeError(
@@ -57,14 +55,36 @@ if missing_variables:
 # SSL CERTIFICATE PATH
 # =========================================================
 
-BASE_DIR = Path(__file__).resolve().parents[2]
+ssl_ca_path = Path(DB_SSL_CA)
 
-SSL_CA_PATH = BASE_DIR / DB_SSL_CA
+# ---------------------------------------------------------
+# Render Secret File
+# ---------------------------------------------------------
+# Render provides secret files as absolute paths such as:
+#
+# /etc/secrets/ca.pem
+#
+# ---------------------------------------------------------
+
+if not ssl_ca_path.is_absolute():
+
+    # -----------------------------------------------------
+    # Local Development
+    # -----------------------------------------------------
+
+    project_root = Path(__file__).resolve().parents[2]
+
+    ssl_ca_path = project_root / ssl_ca_path
 
 
-if not SSL_CA_PATH.exists():
+# =========================================================
+# VALIDATE SSL CERTIFICATE
+# =========================================================
+
+if not ssl_ca_path.exists():
     raise RuntimeError(
-        f"MySQL CA certificate was not found at: {SSL_CA_PATH}"
+        f"MySQL CA certificate was not found at: "
+        f"{ssl_ca_path}"
     )
 
 
@@ -90,7 +110,7 @@ engine = create_engine(
     DATABASE_URL,
     connect_args={
         "ssl": {
-            "ca": str(SSL_CA_PATH),
+            "ca": str(ssl_ca_path),
         }
     },
     pool_pre_ping=True,
