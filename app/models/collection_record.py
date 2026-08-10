@@ -16,7 +16,8 @@ class CollectionRecord(Base):
     schedule_id = Column(
         Integer,
         ForeignKey("collection_schedule.schedule_id"),
-        unique=True
+        unique=True,
+        nullable=True
     )
 
     completion_date = Column(
@@ -26,7 +27,8 @@ class CollectionRecord(Base):
 
     collection_status = Column(
         String(30),
-        default="Completed"
+        default="Completed",
+        nullable=True
     )
 
     remarks = Column(
@@ -34,4 +36,7 @@ class CollectionRecord(Base):
         nullable=True
     )
 
-    schedule = relationship("CollectionSchedule")
+    schedule = relationship(
+        "CollectionSchedule",
+        back_populates="collection_record"
+    )

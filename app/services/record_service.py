@@ -1,16 +1,26 @@
+from datetime import date
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.collection_record import CollectionRecord
 from app.models.collection_schedule import CollectionSchedule
-from app.schemas.record_schema import CollectionRecordCreate
+from app.models.waste_bin import WasteBin
 
+from app.schemas.record_schema import (
+    CollectionRecordCreate,
+)
+
+
+# =========================================================
+# CREATE COLLECTION RECORD
+# =========================================================
 
 def create_record(
     record: CollectionRecordCreate,
     db: Session
 ):
-    # Check that the schedule exists
+
     schedule = (
         db.query(CollectionSchedule)
         .filter(
@@ -26,7 +36,7 @@ def create_record(
             detail="Collection schedule not found."
         )
 
-    # Check whether this schedule already has a record
+    # Prevent duplicate records
     existing_record = (
         db.query(CollectionRecord)
         .filter(
@@ -50,28 +60,59 @@ def create_record(
     )
 
     db.add(new_record)
+
+    # Mark the schedule as completed
+    schedule.schedule_status = "Completed"
+
+    # Empty the bin after collection
+    waste_bin = (
+        db.query(WasteBin)
+        .filter(
+            WasteBin.bin_id == schedule.bin_id
+        )
+        .first()
+    )
+
+    if waste_bin:
+        waste_bin.fill_level = 0
+        waste_bin.bin_status = "Empty"
+
     db.commit()
+
     db.refresh(new_record)
 
     return new_record
 
 
+# =========================================================
+# GET ALL RECORDS
+# =========================================================
+
 def get_all_records(db: Session):
+
     return (
         db.query(CollectionRecord)
-        .order_by(CollectionRecord.record_id.desc())
+        .order_by(
+            CollectionRecord.record_id.desc()
+        )
         .all()
     )
 
+
+# =========================================================
+# GET SINGLE RECORD
+# =========================================================
 
 def get_record(
     record_id: int,
     db: Session
 ):
+
     return (
         db.query(CollectionRecord)
         .filter(
-            CollectionRecord.record_id == record_id
+            CollectionRecord.record_id
+            == record_id
         )
         .first()
     )

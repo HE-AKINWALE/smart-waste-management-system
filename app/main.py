@@ -1,4 +1,10 @@
+import asyncio
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Depends
+
+from app.database.database import SessionLocal
+from app.services.collection_processor import process_due_collections
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.auth_routes import router as auth_router
@@ -25,12 +31,51 @@ from app.routes.health_routes import router as health_router
 from app.routes.permission_routes import router as permission_router
 from app.routes.password_routes import router as password_router
 
+async def automatic_collection_processor():
+    while True:
+        db = SessionLocal()
+
+        try:
+            processed = process_due_collections(db)
+
+            if processed:
+                print(
+                    f"Automatically processed collections: {processed}"
+                )
+
+        except Exception as e:
+            print(
+                f"Automatic collection processing error: {e}"
+            )
+
+        finally:
+            db.close()
+
+        # Check every 60 seconds
+        await asyncio.sleep(60)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(
+        automatic_collection_processor()
+    )
+
+    try:
+        yield
+    finally:
+        task.cancel()
+
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
 
 app = FastAPI(
     title="Smart Waste Management System",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
-
 
 # =========================================================
 # CORS CONFIGURATION
