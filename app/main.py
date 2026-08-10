@@ -88,6 +88,7 @@ app.add_middleware(
         # Local Vite development
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "https://smart-waste-frontend-tau.vercel.app",
 
         # Production frontend
         # We will add your actual Vercel domain here
