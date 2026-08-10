@@ -1,5 +1,5 @@
 from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from dotenv import load_dotenv
 import os
@@ -9,14 +9,23 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/auth/login"
-)
+# =========================================================
+# BEARER AUTHENTICATION
+# =========================================================
 
+bearer_scheme = HTTPBearer()
+
+
+# =========================================================
+# VERIFY JWT TOKEN
+# =========================================================
 
 def verify_token(
-    token: str = Depends(oauth2_scheme)
+    credentials: HTTPAuthorizationCredentials = Depends(
+        bearer_scheme
+    )
 ):
+    token = credentials.credentials
 
     try:
 
@@ -29,6 +38,7 @@ def verify_token(
         user_id = payload.get("sub")
 
         if user_id is None:
+
             raise HTTPException(
                 status_code=401,
                 detail="Invalid token."
@@ -43,5 +53,5 @@ def verify_token(
 
         raise HTTPException(
             status_code=401,
-            detail="Invalid token"
+            detail="Invalid token."
         )

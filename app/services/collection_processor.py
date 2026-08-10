@@ -358,4 +358,4 @@ def process_due_collections(db: Session):
 
     db.commit()
 
-    return processeds
+    return processed
